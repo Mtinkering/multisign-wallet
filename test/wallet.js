@@ -1,19 +1,19 @@
 // artifacts injected by truffle
-const { expectRevert } = require('@openzeppelin/test-helpers');
-const Wallet = artifacts.require('wallet');
+const { expectRevert } = require("@openzeppelin/test-helpers");
+const Wallet = artifacts.require("wallet");
 
-contract('Wallet', (accounts) => {
+contract("Wallet", (accounts) => {
   let wallet;
   beforeEach(async () => {
     wallet = await Wallet.new([accounts[0], accounts[1], accounts[2]], 2);
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: wallet.address,
-      value: 1000
+      value: 1000,
     });
   });
 
-  it('should have correct approvers and quorum', async () => {
+  it("should have correct approvers and quorum", async () => {
     const approvers = await wallet.getApprovers();
     const quorum = await wallet.quorum();
 
@@ -24,9 +24,9 @@ contract('Wallet', (accounts) => {
     assert(quorum.toNumber() === 2);
   });
 
-  it('should create transfers', async () => {
+  it("should create transfers", async () => {
     await wallet.createTransfer(100, accounts[5], {
-      from: accounts[0]
+      from: accounts[0],
     });
     const transfers = await wallet.getTransfers();
     assert(transfers.length === 1);
@@ -37,79 +37,95 @@ contract('Wallet', (accounts) => {
     assert(transfers[0].sent === false);
   });
 
-  it('should NOT create transfers if sender is not approved', async () => {
-    await expectRevert(wallet.createTransfer(100, accounts[5], {
-        from: accounts[4]
+  it("should NOT create transfers if sender is not approved", async () => {
+    await expectRevert(
+      wallet.createTransfer(100, accounts[5], {
+        from: accounts[4],
       }),
-      'only approver allowed');
+      "only approver allowed"
+    );
   });
 
-  it('should increment approvals', async () => {
+  it("should increment approvals", async () => {
     await wallet.createTransfer(100, accounts[5], {
-      from: accounts[0]
+      from: accounts[0],
     });
     await wallet.approveTransfer(0, {
-      from: accounts[0]
+      from: accounts[0],
     });
     const transfers = await wallet.getTransfers();
     const balance = await web3.eth.getBalance(wallet.address);
     assert(Number.parseInt(transfers[0].approvals) === 1);
     assert(transfers[0].sent === false);
-    assert(balance === '1000');
+    assert(balance === "1000");
   });
 
-  it('should send transfer if quorum reached', async () => {
-    const balanceBefore = web3.utils.toBN(await web3.eth.getBalance(accounts[6]));
+  it("should send transfer if quorum reached", async () => {
+    const balanceBefore = web3.utils.toBN(
+      await web3.eth.getBalance(accounts[6])
+    );
     await wallet.createTransfer(100, accounts[6], {
-      from: accounts[0]
+      from: accounts[0],
     });
     await wallet.approveTransfer(0, {
-      from: accounts[0]
+      from: accounts[0],
     });
     await wallet.approveTransfer(0, {
-      from: accounts[1]
+      from: accounts[1],
     });
-    const balanceAfter = web3.utils.toBN(await web3.eth.getBalance(accounts[6]));
+    const balanceAfter = web3.utils.toBN(
+      await web3.eth.getBalance(accounts[6])
+    );
     assert(balanceAfter.sub(balanceBefore).toNumber() === 100);
   });
 
-  it('should NOT approve transfers if sender is not approved', async () => {
+  it("should NOT approve transfer is transfer is already sent", async () => {
     await wallet.createTransfer(100, accounts[5], {
-      from: accounts[0]
+      from: accounts[0],
     }),
-    await expectRevert(wallet.approveTransfer(0, {
-        from: accounts[4]
-      }),
-      'only approver allowed');
+      await expectRevert(
+        wallet.approveTransfer(0, {
+          from: accounts[4],
+        }),
+        "only approver allowed"
+      );
   });
 
-  it('should NOT approve transfers if sender is not approved', async () => {
+  it("should NOT approve transfers if sender is not approved", async () => {
     await wallet.createTransfer(100, accounts[6], {
-      from: accounts[0]
+      from: accounts[0],
     });
     await wallet.approveTransfer(0, {
-      from: accounts[0]
+      from: accounts[0],
     });
     await wallet.approveTransfer(0, {
-      from: accounts[1]
+      from: accounts[1],
     });
-    
-    await expectRevert(wallet.approveTransfer(0, {
-        from: accounts[2]
+
+    await expectRevert(
+      wallet.approveTransfer(0, {
+        from: accounts[2],
       }),
-      'transfer has already been sent');
+      "transfer has already been sent"
+    );
   });
 
-  it('should NOT approve transfer twice', async () => {
+  it("should NOT approve transfer twice", async () => {
     await wallet.createTransfer(100, accounts[6], {
-      from: accounts[0]
+      from: accounts[0],
     });
     await wallet.approveTransfer(0, {
-      from: accounts[0]
+      from: accounts[0],
     });
-    await expectRevert(wallet.approveTransfer(0, {
-        from: accounts[0]
+    await expectRevert(
+      wallet.approveTransfer(0, {
+        from: accounts[0],
       }),
-      'cannot approve transfer twice');
+      "cannot approve transfer twice"
+    );
   });
+
+  it("should support transfer ERC20 token");
+
+  it("should support transfer ERC20 token");
 });
