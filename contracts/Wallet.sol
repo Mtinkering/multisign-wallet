@@ -3,6 +3,8 @@ pragma solidity >=0.4.22 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 contract Wallet {
+  // Faciliate the lookup efficiency by using mapping
+  mapping(address => bool) approverMapping;
   address[] public approvers;
   
   uint public quorum;
@@ -22,8 +24,12 @@ contract Wallet {
   mapping(address => mapping(uint => bool)) public approvals;
   
   constructor(address[] memory _approvers, uint _quorum) {
-    approvers = _approvers;
     quorum = _quorum;
+    approvers = _approvers;
+
+    for (uint i = 0; i < _approvers.length; i++) {
+      approverMapping[_approvers[i]] = true;
+    }
   }
   
   function getApprovers() external view returns(address[] memory) {
@@ -70,13 +76,7 @@ contract Wallet {
   
   // Authorize
   modifier onlyApprover() {
-    bool allowed = false;
-    for (uint i = 0; i < approvers.length; i++) {
-      if (approvers[i] == msg.sender) {
-        allowed = true;
-      }
-    }
-    require(allowed == true, 'only approver allowed');
+    require(approverMapping[msg.sender] == true, 'only approver allowed');
     _;
   }
 }

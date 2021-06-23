@@ -79,7 +79,7 @@ contract("Wallet", (accounts) => {
     assert(balanceAfter.sub(balanceBefore).toNumber() === 100);
   });
 
-  it("should NOT approve transfer is transfer is already sent", async () => {
+  it("should NOT approve transfers if sender is not approved", async () => {
     await wallet.createTransfer(100, accounts[5], {
       from: accounts[0],
     }),
@@ -91,7 +91,7 @@ contract("Wallet", (accounts) => {
       );
   });
 
-  it("should NOT approve transfers if sender is not approved", async () => {
+  it("should NOT approve transfer is transfer is already sent", async () => {
     await wallet.createTransfer(100, accounts[6], {
       from: accounts[0],
     });
