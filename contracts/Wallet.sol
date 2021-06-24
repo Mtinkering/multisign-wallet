@@ -5,27 +5,20 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract Wallet {
-  // Faciliate the lookup efficiency by using mapping
   mapping(address => bool) isApprover;
   address[] public approvers;
+
   uint public quorum;
   string constant ETH = 'ETH';
-
-  // enum Standard {
-  //   ERC20,
-  //   NATIVE
-  // }
 
   struct Token {
     string tokenSymbol;
     address tokenAddress;
-    // Standard standard; 
   }
 
   struct Transfer {
     uint id;
     Token token;
-    // Standard standard;
     uint amount;
     address payable to;
     uint approvals;
@@ -34,11 +27,8 @@ contract Wallet {
 
   Transfer[] public transfers;
 
-  // mapping(bytes32 => Token) public tokenToAddress;
   Token[] public tokens;
 
-  // Mapping {address: {transfer_id: boolean}} to track if certain address
-  // has performed the approval on certain transfer id
   mapping(address => mapping(uint => bool)) public approvals;
   
   constructor(address[] memory _approvers, uint _quorum) {
@@ -54,15 +44,10 @@ contract Wallet {
   
   function addToken(string memory tokenSymbol, address tokenAddress) external onlyApprover() {
     require(tokenAddress != address(0), "invalid erc20 token address");
-    // tokenToAddress[tokenSymbol] = Token(tokenSymbol, tokenAddress);
     tokens.push(Token(tokenSymbol, tokenAddress));
   }
 
   function getTokens() external view returns(Token[] memory) {
-    // Token[] memory _tokens = new Token[](tokenList.length);
-    // for (uint i = 0; i < tokenList.length; i++) {
-    //   _tokens[i] = tokenToAddress[tokenList[i]];
-    // }
     return tokens;
   }
 
@@ -75,12 +60,9 @@ contract Wallet {
   }
   
   function createTransfer(uint amount,  address payable to, Token memory token) external onlyApprover {
-  // function createTransfer(uint amount,  address payable to, address tokenAddress, string memory tokenSymbol) external onlyApprover {
-    
     transfers.push(Transfer(
       transfers.length,
       token,
-      // Token(tokenSymbol, tokenAddress),
       amount,
       to,
       0,
@@ -88,7 +70,6 @@ contract Wallet {
     ));
   }
   
-  // Approve based on the transfer id which is the index of the array
   function approveTransfer(uint id) external onlyApprover {
     require(transfers[id].sent == false, "transfer has already been sent");
     require(approvals[msg.sender][id] == false, "cannot approve transfer twice");
