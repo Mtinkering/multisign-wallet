@@ -1,16 +1,28 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.9.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.0;
+
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
+// Payable to cast to address payable: payable(xksds)
+// payable(msg.sender).transfer(amount in wei);
+// payable(address(contractName))
 
 contract Wallet {
   // Faciliate the lookup efficiency by using mapping
-  mapping(address => bool) approverMapping;
+  mapping(address => bool) isApprover;
   address[] public approvers;
-  
+  address public admin;
   uint public quorum;
   
+  enum Standard {
+    ERC20,
+    NATIVE
+  }
+
   struct Transfer {
     uint id;
+    string tokenSymbol;
+    Standard standard;
     uint amount;
     address payable to;
     uint approvals;
@@ -19,6 +31,15 @@ contract Wallet {
 
   Transfer[] public transfers;
   
+  struct Token {
+    string tokenSymbol;
+    address tokenAddress;
+    Standard standard; 
+  }
+
+  mapping(string => Token) public tokenToAddress;
+  string[] public tokenList;
+
   // Mapping {address: {transfer_id: boolean}} to track if certain address
   // has performed the approval on certain transfer id
   mapping(address => mapping(uint => bool)) public approvals;
@@ -28,10 +49,25 @@ contract Wallet {
     approvers = _approvers;
 
     for (uint i = 0; i < _approvers.length; i++) {
-      approverMapping[_approvers[i]] = true;
+      isApprover[_approvers[i]] = true;
     }
+
+    admin = msg.sender;
   }
   
+  function addToken(string memory tokenSymbol, address tokenAddress) external onlyAdmin() {
+    tokenToAddress[tokenSymbol] = Token(tokenSymbol, tokenAddress, Standard.ERC20);
+    tokenList.push(tokenSymbol);
+  }
+
+  function getTokenList() external view returns(Token[] memory) {
+    Token[] memory _tokens = new Token[](tokenList.length);
+    for (uint i = 0; i < tokenList.length; i++) {
+      _tokens[i] = tokenToAddress[tokenList[i]];
+    }
+    return _tokens;
+  }
+
   function getApprovers() external view returns(address[] memory) {
     return approvers;
   }
@@ -40,9 +76,11 @@ contract Wallet {
     return transfers;
   }
   
-  function createTransfer(uint amount, address payable to) external onlyApprover {
+  function createTransfer(Standard standard, string memory tokenSymbol, uint amount,  address payable to) external onlyApprover {
     transfers.push(Transfer(
       transfers.length,
+      tokenSymbol,
+      standard,
       amount,
       to,
       0,
@@ -50,11 +88,10 @@ contract Wallet {
     ));
   }
   
-  // Approve based on on the transfer id
-  // Transfer id is also the index of the array
+  // Approve based on the transfer id which is the index of the array
   function approveTransfer(uint id) external onlyApprover {
-    require(transfers[id].sent == false, 'transfer has already been sent');
-    require(approvals[msg.sender][id] == false, 'cannot approve transfer twice');
+    require(transfers[id].sent == false, "transfer has already been sent");
+    require(approvals[msg.sender][id] == false, "cannot approve transfer twice");
     
     approvals[msg.sender][id] = true;
     transfers[id].approvals++;
@@ -66,8 +103,20 @@ contract Wallet {
       address payable to = transfers[id].to;
       uint amount = transfers[id].amount;
 
-      // Transfer ethereum
-      to.transfer(amount);
+      // ERC20
+      if (transfers[id].standard == Standard.ERC20) {
+        // Retrieve the contract address and call transferFrom
+        IERC20(tokenToAddress[transfers[id].tokenSymbol].tokenAddress).transferFrom(
+          address(this),
+          to,
+          amount
+        );  
+      }
+
+      if (transfers[id].standard == Standard.NATIVE) {
+        // Transfer eth in wei
+        to.transfer(amount);
+      }
     }
   }
   
@@ -76,7 +125,12 @@ contract Wallet {
   
   // Authorize
   modifier onlyApprover() {
-    require(approverMapping[msg.sender] == true, 'only approver allowed');
+    require(isApprover[msg.sender] == true, "only approver allowed");
+    _;
+  }
+
+  modifier onlyAdmin() {
+    require(msg.sender == admin, 'only admin');
     _;
   }
 }

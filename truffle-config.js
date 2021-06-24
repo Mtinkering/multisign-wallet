@@ -1,10 +1,8 @@
-const path = require('path');
-const provider = require('@truffle/hdwallet-provider');
-const fs = require('fs');
+const path = require("path");
+const provider = require("@truffle/hdwallet-provider");
+const fs = require("fs");
 
-const secrets = JSON.parse(
-  fs.readFileSync('.secrets.json').toString().trim()
-);
+const secrets = JSON.parse(fs.readFileSync(".secrets.json").toString().trim());
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -32,7 +30,7 @@ const secrets = JSON.parse(
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
 module.exports = {
-  /**  
+  /**
    * Networks define how you connect to your ethereum client and let you set the
    * defaults web3 uses to send transactions. If you don't specify one truffle
    * will spin up a development blockchain for you on port 9545 when you
@@ -44,14 +42,15 @@ module.exports = {
   contracts_build_directory: path.join(__dirname, "client/src/contracts"),
   networks: {
     kovan: {
-      provider: () => new provider(
-        secrets.privateKeys,
-        'https://kovan.infura.io/v3/f2ab14b27a28488b8c34906e608df589',
-        0,
-        3
-      ),
-      network_id: 42
-    }
+      provider: () =>
+        new provider(
+          secrets.privateKeys,
+          "https://kovan.infura.io/v3/f2ab14b27a28488b8c34906e608df589",
+          0,
+          3
+        ),
+      network_id: 42,
+    },
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
     // You should run a client (like ganache-cli, geth or parity) in a separate terminal
@@ -98,7 +97,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.0",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "^0.8.0", // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
       //  optimizer: {
@@ -107,7 +106,7 @@ module.exports = {
       //  },
       //  evmVersion: "byzantium"
       // }
-    }
+    },
   },
 
   // Truffle DB is currently disabled by default; to enable it, change enabled: false to enabled: true
@@ -117,6 +116,6 @@ module.exports = {
   // $ truffle migrate --reset --compile-all
 
   db: {
-    enabled: false
-  }
+    enabled: false,
+  },
 };
