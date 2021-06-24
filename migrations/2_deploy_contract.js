@@ -11,7 +11,6 @@ module.exports = async function (deployer, _network, accounts) {
     [Cro, Mco].map((erc20Token) => deployer.deploy(erc20Token))
   );
 
-  // Two approvers required out of 3
   await deployer.deploy(
     Wallet,
     [accounts[0], accounts[1], accounts[2]],
@@ -23,7 +22,6 @@ module.exports = async function (deployer, _network, accounts) {
   );
 
   await Promise.all([
-    // Need to change string to byte32?
     wallet.addToken(CRO, cro.address),
     wallet.addToken(MCO, mco.address),
   ]);

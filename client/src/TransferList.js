@@ -23,7 +23,6 @@ function TransferList({ transfers, approveTransfer }) {
               <td>{transfer.amount}</td>
               <td>{transfer.to}</td>
               <td>{transfer.token.tokenSymbol}</td>
-              {/* <td>{transfer.token.tokenAddress}</td> */}
               <td>{transfer.approvals}</td>
               <td>
                 <button onClick={() => approveTransfer(transfer.id)}>

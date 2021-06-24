@@ -1,8 +1,8 @@
-const path = require("path");
-const provider = require("@truffle/hdwallet-provider");
-const fs = require("fs");
+const path = require('path');
+const provider = require('@truffle/hdwallet-provider');
+const fs = require('fs');
 
-const secrets = JSON.parse(fs.readFileSync(".secrets.json").toString().trim());
+const secrets = JSON.parse(fs.readFileSync('.secrets.json').toString().trim());
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -39,13 +39,13 @@ module.exports = {
    *
    * $ truffle test --network <network-name>
    */
-  contracts_build_directory: path.join(__dirname, "client/src/contracts"),
+  contracts_build_directory: path.join(__dirname, 'client/src/contracts'),
   networks: {
     kovan: {
       provider: () =>
         new provider(
           secrets.privateKeys,
-          "https://kovan.infura.io/v3/f2ab14b27a28488b8c34906e608df589",
+          'https://kovan.infura.io/v3/f2ab14b27a28488b8c34906e608df589',
           0,
           3
         ),
@@ -58,9 +58,9 @@ module.exports = {
     // options below to some value.
     //
     develop: {
-      host: "127.0.0.1", // Localhost (default: none)
+      host: '127.0.0.1', // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
-      network_id: "*", // Any network (default: none)
+      network_id: '*', // Any network (default: none)
     },
     // Another network with more advanced options...
     // advanced: {
@@ -97,7 +97,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "^0.8.0", // Fetch exact version from solc-bin (default: truffle's version)
+      version: '^0.8.0', // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
       //  optimizer: {
