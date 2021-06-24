@@ -1,8 +1,12 @@
 const path = require('path');
 const provider = require('@truffle/hdwallet-provider');
+// const fs = require('fs');
+
+// const HDWalletProvider = require("truffle-hdwallet-provider");
 const fs = require('fs');
 
-const secrets = JSON.parse(fs.readFileSync('.secrets.json').toString().trim());
+const secrets = JSON.parse(fs.readFileSync('.secret.json').toString().trim());
+
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -44,12 +48,22 @@ module.exports = {
     kovan: {
       provider: () =>
         new provider(
-          secrets.privateKeys,
-          'https://kovan.infura.io/v3/f2ab14b27a28488b8c34906e608df589',
+          secrets.mnemonic,
+          `https://kovan.infura.io/v3/${secrets.infuraKey}`,
           0,
           3
         ),
       network_id: 42,
+    },
+    rinkeby: {
+      provider: () =>
+        new provider(
+          secrets.mnemonic,
+          `https://rinkeby.infura.io/v3/${secrets.infuraKey}`,
+          0,
+          3
+        ),
+      network_id: 4,
     },
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
