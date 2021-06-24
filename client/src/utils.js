@@ -1,29 +1,29 @@
-import Web3 from 'web3';
-import Wallet from './contracts/Wallet.json';
-import detectEthereumProvider from '@metamask/detect-provider';
+import Web3 from "web3";
+import Wallet from "./contracts/Wallet.json";
+import detectEthereumProvider from "@metamask/detect-provider";
 
 const getWeb3 = () => {
-  // return new Web3('http://localhost:9545');
+  // return new Web3("http://localhost:9545");
   return new Promise(async (resolve, reject) => {
     let provider = await detectEthereumProvider();
-    if(provider) {
-      await provider.request({ method: 'eth_requestAccounts' });
+    if (provider) {
+      await provider.request({ method: "eth_requestAccounts" });
       try {
         const web3 = new Web3(window.ethereum);
-          resolve(web3);
-      } catch(error) {
+        resolve(web3);
+      } catch (error) {
         reject(error);
       }
     } else if (window.web3) {
       resolve(window.web3);
     } else {
-      reject('Must install Metamask');
+      reject("Must install Metamask");
     }
   });
-}
+};
 
 // To get contract instance
-const getWallet = async web3 => {
+const getWallet = async (web3) => {
   const networkId = await web3.eth.net.getId();
   const deployedNetwork = Wallet.networks[networkId];
 
@@ -31,6 +31,6 @@ const getWallet = async web3 => {
     Wallet.abi,
     deployedNetwork && deployedNetwork.address
   );
-}
+};
 
 export { getWeb3, getWallet };

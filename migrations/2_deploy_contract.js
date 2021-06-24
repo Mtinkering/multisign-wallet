@@ -1,18 +1,21 @@
-const Cro = artifacts.require("erc20Tokens/Cro");
-const Mco = artifacts.require("erc20Tokens/Mco");
-const Wallet = artifacts.require("Wallet");
+const Cro = artifacts.require('erc20Tokens/Cro');
+const Mco = artifacts.require('erc20Tokens/Mco');
+const Wallet = artifacts.require('Wallet');
+
+const [CRO, MCO] = ['CRO', 'MCO'];
+const QUORUM = 2;
+const AMOUNT = web3.utils.toWei('1');
 
 module.exports = async function (deployer, _network, accounts) {
   await Promise.all(
     [Cro, Mco].map((erc20Token) => deployer.deploy(erc20Token))
   );
 
-  // 2 approvers
-  const quorum = 2;
+  // Two approvers required out of 3
   await deployer.deploy(
     Wallet,
     [accounts[0], accounts[1], accounts[2]],
-    quorum
+    QUORUM
   );
 
   const [cro, mco, wallet] = await Promise.all(
@@ -20,16 +23,13 @@ module.exports = async function (deployer, _network, accounts) {
   );
 
   await Promise.all([
-    wallet.addToken("CRO", cro.address),
-    wallet.addToken("MCO", mco.address),
+    // Need to change string to byte32?
+    wallet.addToken(CRO, cro.address),
+    wallet.addToken(MCO, mco.address),
   ]);
 
-  const amount = web3.utils.toWei("1");
-  const seedToWallet = async (token, spender) => {
-    await token.faucet(spender, amount);
-
-    // What happens if no approval?
-    // await token.approve(spender, amount, { from: spender });
+  const seedToWallet = async (token, wallet) => {
+    await token.faucet(wallet, AMOUNT);
   };
 
   await Promise.all(
@@ -39,6 +39,6 @@ module.exports = async function (deployer, _network, accounts) {
   await web3.eth.sendTransaction({
     from: accounts[0],
     to: wallet.address,
-    value: 1000000000,
+    value: AMOUNT,
   });
 };

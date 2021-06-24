@@ -3,26 +3,29 @@ pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-// Payable to cast to address payable: payable(xksds)
-// payable(msg.sender).transfer(amount in wei);
-// payable(address(contractName))
 
 contract Wallet {
   // Faciliate the lookup efficiency by using mapping
   mapping(address => bool) isApprover;
   address[] public approvers;
-  address public admin;
   uint public quorum;
-  
-  enum Standard {
-    ERC20,
-    NATIVE
+  string constant ETH = 'ETH';
+
+  // enum Standard {
+  //   ERC20,
+  //   NATIVE
+  // }
+
+  struct Token {
+    string tokenSymbol;
+    address tokenAddress;
+    // Standard standard; 
   }
 
   struct Transfer {
     uint id;
-    string tokenSymbol;
-    Standard standard;
+    Token token;
+    // Standard standard;
     uint amount;
     address payable to;
     uint approvals;
@@ -30,15 +33,9 @@ contract Wallet {
   }
 
   Transfer[] public transfers;
-  
-  struct Token {
-    string tokenSymbol;
-    address tokenAddress;
-    Standard standard; 
-  }
 
-  mapping(string => Token) public tokenToAddress;
-  string[] public tokenList;
+  // mapping(bytes32 => Token) public tokenToAddress;
+  Token[] public tokens;
 
   // Mapping {address: {transfer_id: boolean}} to track if certain address
   // has performed the approval on certain transfer id
@@ -52,20 +49,21 @@ contract Wallet {
       isApprover[_approvers[i]] = true;
     }
 
-    admin = msg.sender;
+    tokens.push(Token(ETH, address(0)));
   }
   
-  function addToken(string memory tokenSymbol, address tokenAddress) external onlyAdmin() {
-    tokenToAddress[tokenSymbol] = Token(tokenSymbol, tokenAddress, Standard.ERC20);
-    tokenList.push(tokenSymbol);
+  function addToken(string memory tokenSymbol, address tokenAddress) external onlyApprover() {
+    require(tokenAddress != address(0), "invalid erc20 token address");
+    // tokenToAddress[tokenSymbol] = Token(tokenSymbol, tokenAddress);
+    tokens.push(Token(tokenSymbol, tokenAddress));
   }
 
-  function getTokenList() external view returns(Token[] memory) {
-    Token[] memory _tokens = new Token[](tokenList.length);
-    for (uint i = 0; i < tokenList.length; i++) {
-      _tokens[i] = tokenToAddress[tokenList[i]];
-    }
-    return _tokens;
+  function getTokens() external view returns(Token[] memory) {
+    // Token[] memory _tokens = new Token[](tokenList.length);
+    // for (uint i = 0; i < tokenList.length; i++) {
+    //   _tokens[i] = tokenToAddress[tokenList[i]];
+    // }
+    return tokens;
   }
 
   function getApprovers() external view returns(address[] memory) {
@@ -76,11 +74,13 @@ contract Wallet {
     return transfers;
   }
   
-  function createTransfer(Standard standard, string memory tokenSymbol, uint amount,  address payable to) external onlyApprover {
+  function createTransfer(uint amount,  address payable to, Token memory token) external onlyApprover {
+  // function createTransfer(uint amount,  address payable to, address tokenAddress, string memory tokenSymbol) external onlyApprover {
+    
     transfers.push(Transfer(
       transfers.length,
-      tokenSymbol,
-      standard,
+      token,
+      // Token(tokenSymbol, tokenAddress),
       amount,
       to,
       0,
@@ -104,33 +104,30 @@ contract Wallet {
       uint amount = transfers[id].amount;
 
       // ERC20
-      if (transfers[id].standard == Standard.ERC20) {
+      if (transfers[id].token.tokenAddress != address(0)) {
         // Retrieve the contract address and call transferFrom
-        IERC20(tokenToAddress[transfers[id].tokenSymbol].tokenAddress).transferFrom(
-          address(this),
+        // IERC20(tokenToAddress[transfers[id].tokenSymbol].tokenAddress).transferFrom(
+        //   address(this),
+        //   to,
+        //   amount
+        // );  
+        // Wallet to send the amount of token to the address
+        // Can send?
+        IERC20(transfers[id].token.tokenAddress).transfer(
           to,
           amount
         );  
-      }
-
-      if (transfers[id].standard == Standard.NATIVE) {
+      } else {
         // Transfer eth in wei
         to.transfer(amount);
       }
     }
   }
   
-  // Fallback
   receive() external payable {}
   
-  // Authorize
   modifier onlyApprover() {
     require(isApprover[msg.sender] == true, "only approver allowed");
-    _;
-  }
-
-  modifier onlyAdmin() {
-    require(msg.sender == admin, 'only admin');
     _;
   }
 }
