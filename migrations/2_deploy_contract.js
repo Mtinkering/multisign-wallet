@@ -22,12 +22,12 @@ module.exports = async function (deployer, _network, accounts) {
   );
 
   await Promise.all([
-    wallet.addToken(CRO, cro.address),
-    wallet.addToken(MCO, mco.address),
+    wallet.addToken(CRO, cro.address, { from: accounts[0] }),
+    wallet.addToken(MCO, mco.address, { from: accounts[0] }),
   ]);
 
-  const seedToWallet = async (token, wallet) => {
-    await token.faucet(wallet, AMOUNT);
+  const seedToWallet = async (token, walletAddress) => {
+    await token.faucet(walletAddress, AMOUNT);
   };
 
   await Promise.all(

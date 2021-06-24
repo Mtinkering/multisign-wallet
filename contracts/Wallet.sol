@@ -7,7 +7,6 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 contract Wallet {
   mapping(address => bool) isApprover;
   address[] public approvers;
-
   uint public quorum;
   string constant ETH = 'ETH';
 
@@ -58,8 +57,8 @@ contract Wallet {
   function getTransfers() external view returns(Transfer[] memory) {
     return transfers;
   }
-  
-  function createTransfer(uint amount,  address payable to, Token memory token) external onlyApprover {
+
+  function createTransfer(uint amount,  address payable to, Token memory token) external onlyApprover() {
     transfers.push(Transfer(
       transfers.length,
       token,
@@ -70,7 +69,7 @@ contract Wallet {
     ));
   }
   
-  function approveTransfer(uint id) external onlyApprover {
+  function approveTransfer(uint id) external onlyApprover() {
     require(transfers[id].sent == false, "transfer has already been sent");
     require(approvals[msg.sender][id] == false, "cannot approve transfer twice");
     
@@ -86,20 +85,11 @@ contract Wallet {
 
       // ERC20
       if (transfers[id].token.tokenAddress != address(0)) {
-        // Retrieve the contract address and call transferFrom
-        // IERC20(tokenToAddress[transfers[id].tokenSymbol].tokenAddress).transferFrom(
-        //   address(this),
-        //   to,
-        //   amount
-        // );  
-        // Wallet to send the amount of token to the address
-        // Can send?
         IERC20(transfers[id].token.tokenAddress).transfer(
           to,
           amount
         );  
       } else {
-        // Transfer eth in wei
         to.transfer(amount);
       }
     }

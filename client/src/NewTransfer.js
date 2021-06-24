@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 function NewTransfer({ tokens, createTransfer }) {
   const [transfer, setTransfer] = useState({});
-  console.log(tokens);
 
   const submit = (e) => {
     e.preventDefault();
