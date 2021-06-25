@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 contract Mco is ERC20 {
-  constructor() ERC20("ERC20 MCO", "MCO") {}
+  constructor() ERC20('ERC20 MCO', 'MCO') {}
 
   function faucet(address to, uint amount) external {
     _mint(to, amount);

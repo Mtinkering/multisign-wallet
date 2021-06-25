@@ -9,7 +9,7 @@ contract Wallet {
   address[] public approvers;
 
   uint public quorum;
-  bytes32 constant ETH = 'ETH';
+  bytes32 constant NATIVE = 'ETH';
 
   struct Token {
     bytes32 tokenSymbol;
@@ -40,8 +40,8 @@ contract Wallet {
       isApprover[_approvers[i]] = true;
     }
 
-    tokens.push(Token(ETH, address(0)));
-    tokenAddressToSymbol[address(0)] = ETH;
+    tokens.push(Token(NATIVE, address(0)));
+    tokenAddressToSymbol[address(0)] = NATIVE;
   }
 
   function getTokens() external view returns(Token[] memory) {
@@ -63,7 +63,7 @@ contract Wallet {
   }
 
   function createTransfer(uint amount,  address payable to, Token memory token)
-    external onlyApprover() tokenSupport(token) {
+    external onlyApprover() isTokenSupported(token) {
     transfers.push(Transfer(
       transfers.length,
       token,
@@ -94,7 +94,7 @@ contract Wallet {
           to,
           amount
         );
-      } else if (transfers[id].token.tokenSymbol == ETH) {
+      } else if (transfers[id].token.tokenSymbol == NATIVE) {
         to.transfer(amount);
       } else {
         // Should never happen, as the token is unidentified
@@ -110,7 +110,7 @@ contract Wallet {
     _;
   }
 
-  modifier tokenSupport(Token memory token) {
+  modifier isTokenSupported(Token memory token) {
     require(tokenAddressToSymbol[token.tokenAddress] == token.tokenSymbol, 'token not supported');
     _;
   }
