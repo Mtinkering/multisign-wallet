@@ -46,8 +46,12 @@ function App() {
   }, []);
 
   const _reload = async () => {
-    const transfers = await wallet.methods.getTransfers().call();
-    setTransfers(transfers);
+    const rawTransfers = await wallet.methods.getTransfers().call();
+    const _transfers = rawTransfers.map((transfer) => ({
+      ...transfer,
+      tokenInUtf8: web3.utils.hexToUtf8(transfer.token.tokenSymbol),
+    }));
+    setTransfers(_transfers);
   };
 
   const createTransfer = async (transfer) => {
