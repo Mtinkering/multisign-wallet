@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getWeb3, getWallet } from './utils.js'; 
+import { getWeb3, getWallet } from './utils.js';
 import Header from './Header.js';
 import NewTransfer from './NewTransfer';
 import TransferList from './TransferList';
@@ -11,52 +11,84 @@ function App() {
   const [approvers, setApprovers] = useState([]);
   const [quorum, setQuorum] = useState(undefined);
   const [transfers, setTransfers] = useState([]);
+  const [tokens, setTokens] = useState([]);
 
   useEffect(() => {
     const init = async () => {
-      const web3 = await getWeb3();
-      const accounts = await web3.eth.getAccounts();
-      const wallet = await getWallet(web3);
-      const approvers = await wallet.methods.getApprovers().call(); 
-      const quorum = await wallet.methods.quorum().call(); 
-      const transfers = await wallet.methods.getTransfers().call(); 
-      setWeb3(web3);
-      setAccounts(accounts);
-      setWallet(wallet);
-      setApprovers(approvers);
-      setQuorum(quorum);
-      setTransfers(transfers);
-    }
+      const _web3 = await getWeb3();
+      const _accounts = await _web3.eth.getAccounts();
+      const _wallet = await getWallet(_web3);
+      const [_approvers, _quorum, rawTransfers, rawTokens] = await Promise.all([
+        _wallet.methods.getApprovers().call(),
+        _wallet.methods.quorum().call(),
+        _wallet.methods.getTransfers().call(),
+        _wallet.methods.getTokens().call(),
+      ]);
+
+      const _tokens = rawTokens.map((token) => ({
+        ...token,
+        tokenInUtf8: _web3.utils.hexToUtf8(token.tokenSymbol),
+      }));
+      const _transfers = rawTransfers.map((transfer) => ({
+        ...transfer,
+        tokenInUtf8: _web3.utils.hexToUtf8(transfer.token.tokenSymbol),
+      }));
+
+      setWeb3(_web3);
+      setAccounts(_accounts);
+      setWallet(_wallet);
+      setApprovers(_approvers);
+      setQuorum(_quorum);
+      setTransfers(_transfers);
+      setTokens(_tokens);
+    };
     init();
   }, []);
 
-  const createTransfer = transfer => {
-    wallet.methods.createTransfer(transfer.amount, transfer.to)
-    .send({ from: accounts[0]})
+  const _reload = async () => {
+    const rawTransfers = await wallet.methods.getTransfers().call();
+    const _transfers = rawTransfers.map((transfer) => ({
+      ...transfer,
+      tokenInUtf8: web3.utils.hexToUtf8(transfer.token.tokenSymbol),
+    }));
+    setTransfers(_transfers);
   };
 
-  const approveTransfer = transferId => {
-    wallet.methods
-      .approveTransfer(transferId)
-      .send({from: accounts[0]})
-  }
+  const createTransfer = async (transfer) => {
+    await wallet.methods
+      .createTransfer(transfer.amount, transfer.to, transfer.token)
+      .send({ from: accounts[0] });
 
-  if(
-    typeof web3 === 'undefined'
-    || typeof accounts === 'undefined'
-    || typeof wallet === 'undefined'
-    || approvers.length === 0
-    || typeof quorum === 'undefined'
+    _reload();
+  };
+
+  const approveTransfer = async (transferId) => {
+    await wallet.methods
+      .approveTransfer(transferId)
+      .send({ from: accounts[0] });
+
+    _reload();
+  };
+
+  if (
+    typeof web3 === 'undefined' ||
+    typeof accounts === 'undefined' ||
+    typeof wallet === 'undefined' ||
+    !tokens ||
+    tokens.length === 0 ||
+    !approvers ||
+    approvers.length === 0 ||
+    typeof quorum === 'undefined'
   ) {
     return <div>Loading...</div>;
   }
 
   return (
     <div>
-      Multisig Dapp 
+      Multisig Dapp
       <Header approvers={approvers} quorum={quorum} />
-      <NewTransfer createTransfer={createTransfer} />
-      <TransferList transfers={transfers} approveTransfer={approveTransfer}/>
+      <NewTransfer tokens={tokens} createTransfer={createTransfer} />
+      <TransferList transfers={transfers} approveTransfer={approveTransfer} />
     </div>
   );
 }
