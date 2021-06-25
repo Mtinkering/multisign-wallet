@@ -1,15 +1,15 @@
 // artifacts injected by truffle
-const { expectRevert } = require('@openzeppelin/test-helpers');
+const { constants, expectRevert } = require('@openzeppelin/test-helpers');
 const Cro = artifacts.require('erc20Tokens/Cro');
 const Mco = artifacts.require('erc20Tokens/Mco');
 const Wallet = artifacts.require('wallet');
+const { ZERO_ADDRESS } = constants;
 
 const [ETH, CRO, MCO] = ['ETH', 'CRO', 'MCO'];
 const QUORUM = 2;
-const ADDRESS_ZERO = '0x0';
 const AMOUNT = web3.utils.toWei('1');
 
-const createToken = (symbol, address) => ({
+const formatToken = (symbol, address) => ({
   0: symbol,
   1: address,
   tokenAddress: address,
@@ -59,15 +59,53 @@ contract('Wallet', (accounts) => {
     assert(quorum.toNumber() === 2);
     assert(tokens.length === 3);
     assert(tokens[0].tokenSymbol === ETH);
+    assert(tokens[0].tokenAddress === ZERO_ADDRESS);
     assert(tokens[1].tokenSymbol === CRO);
+    assert(tokens[1].tokenAddress === cro.address);
     assert(tokens[2].tokenSymbol === MCO);
+    assert(tokens[2].tokenAddress === mco.address);
+  });
+
+  it('should NOT allow adding zero address', async () => {
+    await expectRevert(
+      wallet.addToken(MCO, ZERO_ADDRESS, {
+        from: accounts[0],
+      }),
+      'zero adress is forbidden'
+    );
+  });
+
+  it('should allow if sender is an approver', async () => {
+    await wallet.addToken(MCO, mco.address, {
+      from: accounts[0],
+    });
+
+    const tokens = await wallet.getTokens();
+    assert(tokens.length === 4);
+    assert(tokens[0].tokenSymbol === ETH);
+    assert(tokens[0].tokenAddress === ZERO_ADDRESS);
+    assert(tokens[1].tokenSymbol === CRO);
+    assert(tokens[1].tokenAddress === cro.address);
+    assert(tokens[2].tokenSymbol === MCO);
+    assert(tokens[2].tokenAddress === mco.address);
+    assert(tokens[3].tokenSymbol === MCO);
+    assert(tokens[3].tokenAddress === mco.address);
+  });
+
+  it('should NOT allow if send is not an approver', async () => {
+    await expectRevert(
+      wallet.addToken(MCO, mco.address, {
+        from: accounts[4],
+      }),
+      'only approver allowed'
+    );
   });
 
   it('should create transfers', async () => {
     await wallet.createTransfer(
       100,
       accounts[5],
-      createToken(MCO, mco.address),
+      formatToken(MCO, mco.address),
       {
         from: accounts[0],
       }
@@ -85,7 +123,7 @@ contract('Wallet', (accounts) => {
 
   it('should NOT create transfers if sender is not approved', async () => {
     await expectRevert(
-      wallet.createTransfer(100, accounts[5], createToken(MCO, mco.address), {
+      wallet.createTransfer(100, accounts[5], formatToken(MCO, mco.address), {
         from: accounts[4],
       }),
       'only approver allowed'
@@ -96,7 +134,7 @@ contract('Wallet', (accounts) => {
     await wallet.createTransfer(
       100,
       accounts[5],
-      createToken(MCO, mco.address),
+      formatToken(MCO, mco.address),
       {
         from: accounts[0],
       }
@@ -105,22 +143,25 @@ contract('Wallet', (accounts) => {
       from: accounts[0],
     });
     const transfers = await wallet.getTransfers();
-    const balance = await web3.eth.getBalance(wallet.address);
+    const ethBalance = await web3.eth.getBalance(wallet.address);
     const croBalance = await cro.balanceOf(wallet.address);
+    const mcoBalance = await mco.balanceOf(wallet.address);
+
     assert(Number.parseInt(transfers[0].approvals) === 1);
     assert(transfers[0].sent === false);
-    assert(balance === AMOUNT);
-    // assert(croBalance === AMOUNT);
+    assert(ethBalance === AMOUNT);
+    assert(croBalance.eq(web3.utils.toBN(AMOUNT)));
+    assert(mcoBalance.eq(web3.utils.toBN(AMOUNT)));
   });
 
-  it('should send transfer if quorum reached', async () => {
-    const balanceBefore = web3.utils.toBN(
+  it('should send native token if quorum reached', async () => {
+    const ethBalanceBefore = web3.utils.toBN(
       await web3.eth.getBalance(accounts[6])
     );
     await wallet.createTransfer(
       100,
       accounts[6],
-      createToken(CRO, cro.address),
+      formatToken(ETH, ZERO_ADDRESS),
       {
         from: accounts[0],
       }
@@ -131,17 +172,53 @@ contract('Wallet', (accounts) => {
     await wallet.approveTransfer(0, {
       from: accounts[1],
     });
-    const balanceAfter = web3.utils.toBN(
+    const ethBalanceAfter = web3.utils.toBN(
       await web3.eth.getBalance(accounts[6])
     );
-    assert(balanceAfter.sub(balanceBefore).toNumber() === 100);
+    const croBalance = await cro.balanceOf(wallet.address);
+    const mcoBalance = await mco.balanceOf(wallet.address);
+
+    assert(ethBalanceAfter.sub(ethBalanceBefore).toNumber() === 100);
+    assert(croBalance.eq(web3.utils.toBN(AMOUNT)));
+    assert(mcoBalance.eq(web3.utils.toBN(AMOUNT)));
+  });
+
+  it('should send erc20 token if quorum reached', async () => {
+    const croBalanceBefore = await cro.balanceOf(accounts[6]);
+    const ethBalanceBefore = web3.utils.toBN(
+      await web3.eth.getBalance(accounts[6])
+    );
+
+    await wallet.createTransfer(
+      100,
+      accounts[6],
+      formatToken(CRO, cro.address),
+      {
+        from: accounts[0],
+      }
+    );
+    await wallet.approveTransfer(0, {
+      from: accounts[0],
+    });
+    await wallet.approveTransfer(0, {
+      from: accounts[1],
+    });
+    const croBalanceAfter = await cro.balanceOf(accounts[6]);
+    const mcoBalance = await mco.balanceOf(accounts[6]);
+    const ethBalanceAfter = web3.utils.toBN(
+      await web3.eth.getBalance(accounts[6])
+    );
+
+    assert(croBalanceAfter.sub(croBalanceBefore).eq(web3.utils.toBN(100)));
+    assert(ethBalanceBefore.sub(ethBalanceAfter).eq(web3.utils.toBN(0)));
+    assert(mcoBalance.eq(web3.utils.toBN(0)));
   });
 
   it('should NOT approve transfer if sender is not approved', async () => {
     await wallet.createTransfer(
       100,
       accounts[5],
-      createToken(MCO, mco.address),
+      formatToken(MCO, mco.address),
       {
         from: accounts[0],
       }
@@ -158,7 +235,7 @@ contract('Wallet', (accounts) => {
     await wallet.createTransfer(
       100,
       accounts[6],
-      createToken(MCO, mco.address),
+      formatToken(MCO, mco.address),
       {
         from: accounts[0],
       }
@@ -182,7 +259,7 @@ contract('Wallet', (accounts) => {
     await wallet.createTransfer(
       100,
       accounts[6],
-      createToken(MCO, mco.address),
+      formatToken(MCO, mco.address),
       {
         from: accounts[0],
       }
@@ -197,10 +274,4 @@ contract('Wallet', (accounts) => {
       'cannot approve transfer twice'
     );
   });
-
-  it('should only allow adding non zero address', async () => {});
-
-  it('should send native token when approvals reache quorum', async () => {});
-
-  it('should send ERC20 when approvals reache quorum', async () => {});
 });

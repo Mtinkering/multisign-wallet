@@ -54,7 +54,7 @@ contract Wallet {
   }
 
   function addToken(string memory tokenSymbol, address tokenAddress) external onlyApprover() {
-    require(tokenAddress != address(0), 'invalid erc20 token address');
+    require(tokenAddress != address(0), 'zero adress is forbidden');
     tokens.push(Token(tokenSymbol, tokenAddress));
   }
 
