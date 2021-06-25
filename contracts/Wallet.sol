@@ -40,11 +40,6 @@ contract Wallet {
 
     tokens.push(Token(ETH, address(0)));
   }
-  
-  function addToken(string memory tokenSymbol, address tokenAddress) external onlyApprover() {
-    require(tokenAddress != address(0), "invalid erc20 token address");
-    tokens.push(Token(tokenSymbol, tokenAddress));
-  }
 
   function getTokens() external view returns(Token[] memory) {
     return tokens;
@@ -56,6 +51,11 @@ contract Wallet {
   
   function getTransfers() external view returns(Transfer[] memory) {
     return transfers;
+  }
+
+  function addToken(string memory tokenSymbol, address tokenAddress) external onlyApprover() {
+    require(tokenAddress != address(0), 'invalid erc20 token address');
+    tokens.push(Token(tokenSymbol, tokenAddress));
   }
 
   function createTransfer(uint amount,  address payable to, Token memory token) external onlyApprover() {
@@ -70,14 +70,14 @@ contract Wallet {
   }
   
   function approveTransfer(uint id) external onlyApprover() {
-    require(transfers[id].sent == false, "transfer has already been sent");
-    require(approvals[msg.sender][id] == false, "cannot approve transfer twice");
+    require(transfers[id].sent == false, 'transfer has already been sent');
+    require(approvals[msg.sender][id] == false, 'cannot approve transfer twice');
     
     approvals[msg.sender][id] = true;
     transfers[id].approvals++;
     
     // The moment the number of approvals reaches the quorum,
-    // Attempt to make the transfer
+    // attempt to make the transfer
     if(transfers[id].approvals >= quorum) {
       transfers[id].sent = true;
       address payable to = transfers[id].to;
@@ -88,17 +88,21 @@ contract Wallet {
         IERC20(transfers[id].token.tokenAddress).transfer(
           to,
           amount
-        );  
+        );
+      // } else if (transfers[id].token.tokenSymbol == ETH) {
       } else {
         to.transfer(amount);
       }
+
+      // Should never happen, as the token is unidentified
+      // assert(true);
     }
   }
   
   receive() external payable {}
   
   modifier onlyApprover() {
-    require(isApprover[msg.sender] == true, "only approver allowed");
+    require(isApprover[msg.sender] == true, 'only approver allowed');
     _;
   }
 }

@@ -4,14 +4,25 @@ const Cro = artifacts.require('erc20Tokens/Cro');
 const Mco = artifacts.require('erc20Tokens/Mco');
 const Wallet = artifacts.require('wallet');
 
-const [CRO, MCO] = ['CRO', 'MCO'];
+const [ETH, CRO, MCO] = ['ETH', 'CRO', 'MCO'];
 const QUORUM = 2;
+const ADDRESS_ZERO = '0x0';
 const AMOUNT = web3.utils.toWei('1');
+
+const createToken = (symbol, address) => ({
+  0: symbol,
+  1: address,
+  tokenAddress: address,
+  tokenSymbol: symbol,
+});
 
 contract('Wallet', (accounts) => {
   let wallet;
+  let cro;
+  let mco;
+
   beforeEach(async () => {
-    const [cro, mco] = await Promise.all([Cro.new(), Mco.new()]);
+    [cro, mco] = await Promise.all([Cro.new(), Mco.new()]);
     wallet = await Wallet.new([accounts[0], accounts[1], accounts[2]], QUORUM);
 
     await Promise.all([
@@ -34,7 +45,7 @@ contract('Wallet', (accounts) => {
     });
   });
 
-  it.only('should have correct approvers and quorum and tokens', async () => {
+  it('should have correct approvers and quorum and tokens', async () => {
     const [approvers, quorum, tokens] = await Promise.all([
       wallet.getApprovers(),
       wallet.quorum(),
@@ -47,15 +58,20 @@ contract('Wallet', (accounts) => {
     assert(approvers[2] === accounts[2]);
     assert(quorum.toNumber() === 2);
     assert(tokens.length === 3);
-    assert(tokens[0].tokenSymbol === 'ETH');
-    assert(tokens[1].tokenSymbol === 'CRO');
-    assert(tokens[2].tokenSymbol === 'MCO');
+    assert(tokens[0].tokenSymbol === ETH);
+    assert(tokens[1].tokenSymbol === CRO);
+    assert(tokens[2].tokenSymbol === MCO);
   });
 
   it('should create transfers', async () => {
-    await wallet.createTransfer(100, accounts[5], {
-      from: accounts[0],
-    });
+    await wallet.createTransfer(
+      100,
+      accounts[5],
+      createToken(MCO, mco.address),
+      {
+        from: accounts[0],
+      }
+    );
     const transfers = await wallet.getTransfers();
     assert(transfers.length === 1);
     assert(Number.parseInt(transfers[0].id) === 0);
@@ -63,11 +79,13 @@ contract('Wallet', (accounts) => {
     assert(transfers[0].to === accounts[5]);
     assert(Number.parseInt(transfers[0].approvals) === 0);
     assert(transfers[0].sent === false);
+    assert(transfers[0].token.tokenAddress === mco.address);
+    assert(transfers[0].token.tokenSymbol === MCO);
   });
 
   it('should NOT create transfers if sender is not approved', async () => {
     await expectRevert(
-      wallet.createTransfer(100, accounts[5], {
+      wallet.createTransfer(100, accounts[5], createToken(MCO, mco.address), {
         from: accounts[4],
       }),
       'only approver allowed'
@@ -75,26 +93,38 @@ contract('Wallet', (accounts) => {
   });
 
   it('should increment approvals', async () => {
-    await wallet.createTransfer(100, accounts[5], {
-      from: accounts[0],
-    });
+    await wallet.createTransfer(
+      100,
+      accounts[5],
+      createToken(MCO, mco.address),
+      {
+        from: accounts[0],
+      }
+    );
     await wallet.approveTransfer(0, {
       from: accounts[0],
     });
     const transfers = await wallet.getTransfers();
     const balance = await web3.eth.getBalance(wallet.address);
+    const croBalance = await cro.balanceOf(wallet.address);
     assert(Number.parseInt(transfers[0].approvals) === 1);
     assert(transfers[0].sent === false);
-    assert(balance === '1000');
+    assert(balance === AMOUNT);
+    // assert(croBalance === AMOUNT);
   });
 
   it('should send transfer if quorum reached', async () => {
     const balanceBefore = web3.utils.toBN(
       await web3.eth.getBalance(accounts[6])
     );
-    await wallet.createTransfer(100, accounts[6], {
-      from: accounts[0],
-    });
+    await wallet.createTransfer(
+      100,
+      accounts[6],
+      createToken(CRO, cro.address),
+      {
+        from: accounts[0],
+      }
+    );
     await wallet.approveTransfer(0, {
       from: accounts[0],
     });
@@ -107,10 +137,15 @@ contract('Wallet', (accounts) => {
     assert(balanceAfter.sub(balanceBefore).toNumber() === 100);
   });
 
-  it('should NOT approve transfers if sender is not approved', async () => {
-    await wallet.createTransfer(100, accounts[5], {
-      from: accounts[0],
-    }),
+  it('should NOT approve transfer if sender is not approved', async () => {
+    await wallet.createTransfer(
+      100,
+      accounts[5],
+      createToken(MCO, mco.address),
+      {
+        from: accounts[0],
+      }
+    ),
       await expectRevert(
         wallet.approveTransfer(0, {
           from: accounts[4],
@@ -120,9 +155,14 @@ contract('Wallet', (accounts) => {
   });
 
   it('should NOT approve transfer is transfer is already sent', async () => {
-    await wallet.createTransfer(100, accounts[6], {
-      from: accounts[0],
-    });
+    await wallet.createTransfer(
+      100,
+      accounts[6],
+      createToken(MCO, mco.address),
+      {
+        from: accounts[0],
+      }
+    );
     await wallet.approveTransfer(0, {
       from: accounts[0],
     });
@@ -139,9 +179,14 @@ contract('Wallet', (accounts) => {
   });
 
   it('should NOT approve transfer twice', async () => {
-    await wallet.createTransfer(100, accounts[6], {
-      from: accounts[0],
-    });
+    await wallet.createTransfer(
+      100,
+      accounts[6],
+      createToken(MCO, mco.address),
+      {
+        from: accounts[0],
+      }
+    );
     await wallet.approveTransfer(0, {
       from: accounts[0],
     });

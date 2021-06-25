@@ -8,7 +8,7 @@ function TransferList({ transfers, approveTransfer }) {
         <thead>
           <tr>
             <th>Id</th>
-            <th>Amount</th>
+            <th>Amount (in wei)</th>
             <th>To</th>
             <th>Token</th>
             <th>Approvals</th>

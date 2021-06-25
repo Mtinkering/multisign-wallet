@@ -40,7 +40,7 @@ function NewTransfer({ tokens, createTransfer }) {
           </select>
         </div>
         <div>
-          <label htmlFor="amount">Amount</label>
+          <label htmlFor="amount">Amount (in wei)</label>
           <input
             id="amount"
             type="text"
