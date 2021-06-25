@@ -2,7 +2,8 @@ const Cro = artifacts.require('erc20Tokens/Cro');
 const Mco = artifacts.require('erc20Tokens/Mco');
 const Wallet = artifacts.require('Wallet');
 
-const [CRO, MCO] = ['CRO', 'MCO'];
+const [CRO, MCO] = ['CRO', 'MCO'].map((symbol) => web3.utils.utf8ToHex(symbol));
+
 const QUORUM = 2;
 const AMOUNT = web3.utils.toWei('1');
 

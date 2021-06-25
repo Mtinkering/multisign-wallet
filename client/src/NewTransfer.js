@@ -34,7 +34,7 @@ function NewTransfer({ tokens, createTransfer }) {
             <option value=""> Select Token </option>
             {tokens.map((token, index) => (
               <option key={index} value={index}>
-                {token.tokenSymbol}
+                {token.tokenInUtf8}
               </option>
             ))}
           </select>

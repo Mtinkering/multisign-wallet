@@ -5,7 +5,10 @@ const Mco = artifacts.require('erc20Tokens/Mco');
 const Wallet = artifacts.require('wallet');
 const { ZERO_ADDRESS } = constants;
 
-const [ETH, CRO, MCO] = ['ETH', 'CRO', 'MCO'];
+const [ETH, CRO, MCO] = ['ETH', 'CRO', 'MCO'].map((symbol) =>
+  web3.utils.asciiToHex(symbol).padEnd(66, '0')
+);
+
 const QUORUM = 2;
 const AMOUNT = web3.utils.toWei('1');
 
@@ -58,6 +61,7 @@ contract('Wallet', (accounts) => {
     assert(approvers[2] === accounts[2]);
     assert(quorum.toNumber() === 2);
     assert(tokens.length === 3);
+
     assert(tokens[0].tokenSymbol === ETH);
     assert(tokens[0].tokenAddress === ZERO_ADDRESS);
     assert(tokens[1].tokenSymbol === CRO);
@@ -127,6 +131,43 @@ contract('Wallet', (accounts) => {
         from: accounts[4],
       }),
       'only approver allowed'
+    );
+  });
+
+  it('should NOT create transfers if token is not supported', async () => {
+    await expectRevert(
+      wallet.createTransfer(100, accounts[5], formatToken(MCO, ZERO_ADDRESS), {
+        from: accounts[2],
+      }),
+      'token not supported'
+    );
+    await expectRevert(
+      wallet.createTransfer(
+        100,
+        accounts[5],
+        formatToken(
+          web3.utils.asciiToHex('TOKEN-NOT-EXIST').padEnd(66, '0'),
+          mco.address
+        ),
+        {
+          from: accounts[2],
+        }
+      ),
+      'token not supported'
+    );
+    await expectRevert(
+      wallet.createTransfer(
+        100,
+        accounts[5],
+        formatToken(
+          web3.utils.asciiToHex('TOKEN-NOT-EXIST').padEnd(66, '0'),
+          ZERO_ADDRESS
+        ),
+        {
+          from: accounts[2],
+        }
+      ),
+      'token not supported'
     );
   });
 

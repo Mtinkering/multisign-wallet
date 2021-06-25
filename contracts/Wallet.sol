@@ -9,10 +9,10 @@ contract Wallet {
   address[] public approvers;
 
   uint public quorum;
-  string constant ETH = 'ETH';
+  bytes32 constant ETH = 'ETH';
 
   struct Token {
-    string tokenSymbol;
+    bytes32 tokenSymbol;
     address tokenAddress;
   }
 
@@ -27,6 +27,7 @@ contract Wallet {
 
   Transfer[] public transfers;
 
+  mapping(address => bytes32) tokenAddressToSymbol;
   Token[] public tokens;
 
   mapping(address => mapping(uint => bool)) public approvals;
@@ -40,6 +41,7 @@ contract Wallet {
     }
 
     tokens.push(Token(ETH, address(0)));
+    tokenAddressToSymbol[address(0)] = ETH;
   }
 
   function getTokens() external view returns(Token[] memory) {
@@ -54,12 +56,14 @@ contract Wallet {
     return transfers;
   }
 
-  function addToken(string memory tokenSymbol, address tokenAddress) external onlyApprover() {
+  function addToken(bytes32 tokenSymbol, address tokenAddress) external onlyApprover() {
     require(tokenAddress != address(0), 'zero adress is forbidden');
     tokens.push(Token(tokenSymbol, tokenAddress));
+    tokenAddressToSymbol[tokenAddress] = tokenSymbol;
   }
 
-  function createTransfer(uint amount,  address payable to, Token memory token) external onlyApprover() {
+  function createTransfer(uint amount,  address payable to, Token memory token)
+    external onlyApprover() tokenSupport(token) {
     transfers.push(Transfer(
       transfers.length,
       token,
@@ -77,7 +81,7 @@ contract Wallet {
     approvals[msg.sender][id] = true;
     transfers[id].approvals++;
     
-    // The moment the number of approvals reaches the quorum,
+    // When the number of approvals reaches the quorum,
     // attempt to make the transfer
     if(transfers[id].approvals >= quorum) {
       transfers[id].sent = true;
@@ -90,13 +94,12 @@ contract Wallet {
           to,
           amount
         );
-      // } else if (transfers[id].token.tokenSymbol == ETH) {
-      } else {
+      } else if (transfers[id].token.tokenSymbol == ETH) {
         to.transfer(amount);
+      } else {
+        // Should never happen, as the token is unidentified
+        assert(true);
       }
-
-      // Should never happen, as the token is unidentified
-      // assert(true);
     }
   }
   
@@ -104,6 +107,11 @@ contract Wallet {
   
   modifier onlyApprover() {
     require(isApprover[msg.sender] == true, 'only approver allowed');
+    _;
+  }
+
+  modifier tokenSupport(Token memory token) {
+    require(tokenAddressToSymbol[token.tokenAddress] == token.tokenSymbol, 'token not supported');
     _;
   }
 }

@@ -15,23 +15,32 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
-      const web3 = await getWeb3();
-      const accounts = await web3.eth.getAccounts();
-      const wallet = await getWallet(web3);
-      const [approvers, quorum, transfers, tokens] = await Promise.all([
-        wallet.methods.getApprovers().call(),
-        wallet.methods.quorum().call(),
-        wallet.methods.getTransfers().call(),
-        wallet.methods.getTokens().call(),
+      const _web3 = await getWeb3();
+      const _accounts = await _web3.eth.getAccounts();
+      const _wallet = await getWallet(_web3);
+      const [_approvers, _quorum, rawTransfers, rawTokens] = await Promise.all([
+        _wallet.methods.getApprovers().call(),
+        _wallet.methods.quorum().call(),
+        _wallet.methods.getTransfers().call(),
+        _wallet.methods.getTokens().call(),
       ]);
 
-      setWeb3(web3);
-      setAccounts(accounts);
-      setWallet(wallet);
-      setApprovers(approvers);
-      setQuorum(quorum);
-      setTransfers(transfers);
-      setTokens(tokens);
+      const _tokens = rawTokens.map((token) => ({
+        ...token,
+        tokenInUtf8: _web3.utils.hexToUtf8(token.tokenSymbol),
+      }));
+      const _transfers = rawTransfers.map((transfer) => ({
+        ...transfer,
+        tokenInUtf8: _web3.utils.hexToUtf8(transfer.token.tokenSymbol),
+      }));
+
+      setWeb3(_web3);
+      setAccounts(_accounts);
+      setWallet(_wallet);
+      setApprovers(_approvers);
+      setQuorum(_quorum);
+      setTransfers(_transfers);
+      setTokens(_tokens);
     };
     init();
   }, []);
