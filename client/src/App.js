@@ -61,7 +61,9 @@ function App() {
     typeof web3 === 'undefined' ||
     typeof accounts === 'undefined' ||
     typeof wallet === 'undefined' ||
+    !tokens ||
     tokens.length === 0 ||
+    !approvers ||
     approvers.length === 0 ||
     typeof quorum === 'undefined'
   ) {

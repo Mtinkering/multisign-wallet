@@ -1,10 +1,6 @@
 const path = require('path');
 const provider = require('@truffle/hdwallet-provider');
-// const fs = require('fs');
-
-// const HDWalletProvider = require("truffle-hdwallet-provider");
 const fs = require('fs');
-
 const secret = JSON.parse(fs.readFileSync('.secret.json').toString().trim());
 
 /**

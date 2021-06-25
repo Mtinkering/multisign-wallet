@@ -29,7 +29,7 @@ function NewTransfer({ tokens, createTransfer }) {
       <h2> Create transfer</h2>
       <form onSubmit={(e) => submit(e)}>
         <div>
-          <label htmlFor="token">Token</label>
+          <label htmlFor="token">Token </label>
           <select id="token" onChange={(e) => updateTransfer(e, 'token')}>
             <option value=""> Select Token </option>
             {tokens.map((token, index) => (
@@ -40,7 +40,7 @@ function NewTransfer({ tokens, createTransfer }) {
           </select>
         </div>
         <div>
-          <label htmlFor="amount">Amount (in wei)</label>
+          <label htmlFor="amount">Amount (in wei) </label>
           <input
             id="amount"
             type="text"
@@ -48,15 +48,15 @@ function NewTransfer({ tokens, createTransfer }) {
           />
         </div>
         <div>
-          <label htmlFor="to">To</label>
+          <label htmlFor="to">To </label>
           <input
             id="to"
             type="text"
             onChange={(e) => updateTransfer(e, 'to')}
           />
         </div>
-
         <button>Submit</button>
+        <br />
       </form>
     </div>
   );

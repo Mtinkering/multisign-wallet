@@ -92,7 +92,7 @@ contract('Wallet', (accounts) => {
     assert(tokens[3].tokenAddress === mco.address);
   });
 
-  it('should NOT allow if send is not an approver', async () => {
+  it('should NOT allow if sender is not an approver', async () => {
     await expectRevert(
       wallet.addToken(MCO, mco.address, {
         from: accounts[4],

@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 contract Wallet {
   mapping(address => bool) isApprover;
   address[] public approvers;
+
   uint public quorum;
   string constant ETH = 'ETH';
 

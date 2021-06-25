@@ -3,7 +3,7 @@ import Wallet from './contracts/Wallet.json';
 import detectEthereumProvider from '@metamask/detect-provider';
 
 const getWeb3 = () => {
-  // return new Web3("http://localhost:9545");
+  // return new Web3('http://localhost:9545');
   return new Promise(async (resolve, reject) => {
     let provider = await detectEthereumProvider();
     if (provider) {
